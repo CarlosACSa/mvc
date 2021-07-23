@@ -13,7 +13,7 @@ class View
     private static $vars = [];
 
     /**
-     * Método responsável por definir os dados da classe
+     * Método responsável por definir os dados iniciais da classe
      *
      * @param array $vars
      * @return void

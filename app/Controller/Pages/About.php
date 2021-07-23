@@ -23,12 +23,6 @@ class About extends Page
 
         $obOrganization = new Organization;
 
-        // echo '<pre>';
-        // print_r( $obOrganization );
-        // echo '</pre>';
-        // exit;
-        
-
         // View da About
         $content = View::render('pages/about', [
             'name' => $obOrganization->name,

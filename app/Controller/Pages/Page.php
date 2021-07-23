@@ -4,7 +4,6 @@ namespace App\Controller\Pages;
 
 use \App\Utils\View;
 
-
 class Page
 {
 
@@ -17,7 +16,7 @@ class Page
     {
         return View::render('pages/header');
     }
-    
+
 
     /**
      * Método responsável por renderizar o rodapé da página
@@ -28,7 +27,6 @@ class Page
     {
         return View::render('pages/footer');
     }
-
 
     /**
      * Método responsável por retornar o conteúdo (view) da nossa página genérica

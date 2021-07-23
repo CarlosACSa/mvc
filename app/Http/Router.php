@@ -4,6 +4,7 @@ namespace App\Http;
 
 use \Closure;
 use \Exception;
+USE ReflectionFunction;
 
 class Router
 {
@@ -81,21 +82,24 @@ class Router
          }
       }
 
+
       //VARIÁVEIS DA ROTA
       $params['variables'] = [];
 
       //PADRÃO DE VALIDAÇÃO DAS VARÁVEIS DAS ROTAS
       $patternVariable = '/{(.*?)}/';
-      if (preg_match($patternVariable, $route, $matches)) {
-         $route = preg_match($patternVariable, '(.*?)', $route);
+      if (preg_match_all($patternVariable, $route, $matches)) {
+         $route = preg_replace($patternVariable, '(.*?)', $route);
          $params['variables'] = $matches[1];
+
       }
 
       // PADRÃO DE VALIDAÇÃO DA URL
       $patternRoute = '/^' . str_replace('/', '\/', $route) . '$/';
-
+ 
       // ADICIONA A ROTA DENTRO DA CLASSE
       $this->routes[$patternRoute][$method] = $params;
+      
    }
 
 
@@ -155,11 +159,14 @@ class Router
     */
    private function getUri()
    {
+      //URI DA REQUEST
       $uri = $this->request->getUri();
+
       //FATIA A URI COM PREFIXO
       $xUri = strlen($this->prefix) ? explode($this->prefix, $uri) : [$uri];
+
       //RETORNA A URI SEM PREFIXO
-      return end($xUri);
+      return end($xUri);      
    }
 
    /**
@@ -177,13 +184,25 @@ class Router
 
       //VALIDA AS ROTAS
       foreach ($this->routes as $patternRoute => $methods) {
+         
          //VERIFICA SE A URI BATE O PADRÃO
-         if (preg_match($patternRoute, $uri)) {
+         if (preg_match($patternRoute, $uri,$matches)) {
+         
             //VERIFICA O MÉTODO
             if (isset($methods[$httpMethod])) {
+
+               // REMOVE A PRIMEIRA POSIÇÃO
+               unset($matches[0]);
+               
+               //CHAVES -> VARIÁVEIS PROCESSADAS
+               $keys = $methods[$httpMethod]['variables'];
+               $methods[$httpMethod]['variables'] = array_combine($keys,$matches);
+               $methods[$httpMethod]['variables']['request']= $this->request ;
+               
                //RETORNO DOS PARÂMETROS DA ROTA
                return $methods[$httpMethod];
             }
+         
             //MÉTODO NÃO PERMITIDO /DEFINIDO
             throw new Exception("Método não é permitido", 405);
          }
@@ -204,8 +223,6 @@ class Router
          // OBTEM A ROTA ATUAL
          $route = $this->getRoute();
 
-
-
          //VERIFICA O CONTROLADOR
          if (!isset($route['controller'])) {
             throw new Exception("A URL não pode ser processada", 500);
@@ -213,8 +230,18 @@ class Router
 
          // ARGUMENTOS DA FUNÇÃO
          $args = [];
+
+         //REFLECTION
+         $reflection = new ReflectionFunction($route['controller']);
+         foreach($reflection->getParameters() as $parameter){
+
+            $name = $parameter->getName();
+            $args[$name] = $route['variables'][$name] ?? '';  
+         }
+
          // RETORNA A EXECUÇÃO DA FUNÇÃO
          return call_user_func_array($route['controller'], $args);
+
       } catch (Exception $e) {
          return new Response($e->getCode(), $e->getMessage());
       }
